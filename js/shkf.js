@@ -289,7 +289,7 @@ var shkf = (function(options) {
                   }
                   tpl = _this.tpl(tpl, cart['cart'], true);
                   if (typeof tpl === 'object') {
-                    cartElement = tpl;
+                    cartElement.parentElement.replaceChild(tpl, cartElement);
                   } else {
                     for (k in cart['cart']) {
                       if (cart['cart'].hasOwnProperty(k)) {
