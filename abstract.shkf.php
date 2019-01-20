@@ -11,8 +11,6 @@ abstract class ShkF
 {
     protected $modx;
 
-    protected $DL;
-
     protected $DL_config;
 
     protected $request;
