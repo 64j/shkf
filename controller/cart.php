@@ -126,8 +126,6 @@ class Cart extends ShkF
             $this->getDLConfig($this->cartId, array_merge($DL_config, $this->params));
             $this->out['carts'][$this->cartId] = [];
         }
-
-        //array_push($this->default_fields, $this->config['prefix'] . '.params');
     }
 
     /**
