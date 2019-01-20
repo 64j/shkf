@@ -315,12 +315,11 @@ class Cart extends ShkF
                     'sortType' => 'doclist',
                     'saveDLObject' => 'DLAPI',
                 ]));
-                $this->DL = $this->modx->getPlaceholder('DLAPI');
-                $this->docs = $this->DL->docsCollection()
+                $DL = $this->modx->getPlaceholder('DLAPI');
+                $this->docs = $DL->docsCollection()
                     ->toArray();
 
                 $tvPrice = $this->getDLConfig($cartId, 'tvPrefix', '', '', '.' . $this->config['tvPrice']);
-                $extPrepare = $this->DL->getExtender('prepare');
                 if (!isset($this->default_fields[$tvPrice])) {
                     $this->default_fields[$tvPrice] = $tvPrice;
                 }
@@ -340,7 +339,7 @@ class Cart extends ShkF
                         'count' => $count,
                         'iteration' => $i++,
                         $tvPrice => $this->setCalcParams($k, $id, $tvPrice)
-                    ], $extPrepare);
+                    ], $DL);
 
                     $item = $this->prepare($this->getConfig('prepareTpl', ''), $item);
 
@@ -444,10 +443,10 @@ class Cart extends ShkF
      * @param string $ctx
      * @param array $item
      * @param array $plh
-     * @param null $extPrepare
+     * @param null $DL
      * @return array
      */
-    protected function _render($ctx = 'shkf', $item = [], $plh = [], $extPrepare = null)
+    protected function _render($ctx = 'shkf', $item = [], $plh = [], $DL = null)
     {
         $item = array_merge($item, $plh);
         $item['title'] = ($item['menutitle'] == '' ? $item['pagetitle'] : $item['menutitle']);
@@ -458,9 +457,9 @@ class Cart extends ShkF
         } else {
             $item['url'] = $this->modx->makeUrl((int)$item['id'], '', '', $this->getDLConfig($ctx, 'urlScheme'));
         }
-
+        $extPrepare = $DL->getExtender('prepare');
         if (!empty($extPrepare)) {
-            $item = $extPrepare->init($this->DL, array(
+            $item = $extPrepare->init($DL, array(
                 'data' => $item,
                 'nameParam' => 'prepare'
             ));
