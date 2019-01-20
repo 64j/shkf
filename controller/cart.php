@@ -89,7 +89,7 @@ class Cart extends ShkF
      */
     public function getDocs()
     {
-        return $this->docs;
+        return empty($this->docs) ? null : $this->docs;
     }
 
     /**
@@ -97,7 +97,7 @@ class Cart extends ShkF
      */
     public function getItems()
     {
-        return $this->out['items'];
+        return empty($this->out['items']) ? [] : $this->out['items'];
     }
 
     /**
@@ -105,8 +105,11 @@ class Cart extends ShkF
      */
     public function getCart()
     {
-        $out = $this->out['cart'];
-        unset($out['cart.id']);
+        $out = [];
+        if (!empty($this->out['cart'])) {
+            $out = $this->out['cart'];
+            unset($out['cart.id']);
+        }
 
         return $out;
     }

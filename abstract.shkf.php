@@ -21,23 +21,23 @@ abstract class ShkF
 
     protected $session;
 
-    protected $carts;
+    public $carts;
 
     protected $params = [];
 
-    protected $docs;
+    public $docs;
 
-    protected $sum;
+    public $sum;
 
-    protected $sumTotal;
+    public $sumTotal;
 
-    protected $count;
+    public $count;
 
-    protected $countItems;
+    public $countItems;
 
-    protected $cartId;
+    public $cartId;
 
-    protected $out;
+    public $out;
 
     /**
      * ShkF constructor.
