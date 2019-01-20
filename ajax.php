@@ -13,9 +13,9 @@ if (empty($modx->config)) {
     $modx->getSettings();
 }
 
-//if (empty($modx->snippetCache['shkfCartProps']) || (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || (strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) != 'xmlhttprequest'))) {
-//    $modx->sendErrorPage();
-//}
+if (empty($modx->snippetCache['shkfCartProps']) || (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || (strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) != 'xmlhttprequest'))) {
+    $modx->sendErrorPage();
+}
 
 header('content-type: application/json');
 
