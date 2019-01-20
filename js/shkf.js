@@ -1,4 +1,6 @@
 var shkf = (function(options) {
+  'use strict';
+
   var __ = function() {
     this.prefix = options['prefix'] || 'shkf';
     this.initial = false;
@@ -164,7 +166,7 @@ var shkf = (function(options) {
   };
 
   __.prototype.numberOfCharactersAfterPoint = function(n) {
-    return n.toString().includes('.') ? n.toString().split('.').pop().length : 0;
+    return ~n.toString().indexOf('.') ? n.toString().split('.').pop().length : 0;
   };
 
   __.prototype.process = function() {
@@ -232,11 +234,10 @@ var shkf = (function(options) {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'assets/modules/shkf/ajax.php', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('X-REQUESTED-WITH', 'XMLHttpRequest');
-    xhr.responseType = 'json';
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4) {
-        var response = xhr.response, cartId, cart, items, params, param, tpl, k;
+        var response = JSON.parse(xhr.response), cartId, cart, items, params, param, tpl, k;
         if (xhr.status === 200 && response) {
           if (typeof response['carts'] !== 'undefined') {
             for (cartId in response['carts']) {
@@ -295,7 +296,9 @@ var shkf = (function(options) {
                             }
                           }
                           items[k][_this.prefix + '.params'] = _this.tpl(_this.carts[cartId]['tplParams'], {
-                            params: Object.values(params).join('')
+                            params: Object.keys(params).map(function(e) {
+                              return params[e];
+                            }).join('')
                           });
                           cart['cart']['cart.wrap'] += _this.tpl(_this.carts[cartId]['tpl'], items[k]);
                         }
