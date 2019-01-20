@@ -13,49 +13,49 @@ class Cart extends ShkF
 
     protected $default_fields = [
         // cart
-        'count',
-        'key',
+        'count' => '',
+        'key' => '',
         // prepare
-        'iteration',
-        'title',
-        'url',
+        'iteration' => '',
+        'title' => '',
+        'url' => '',
         // document
-        'id',
-        'type',
-        'contentType',
-        'pagetitle',
-        'longtitle',
-        'description',
-        'alias',
-        'link_attributes',
-        'published',
-        'pub_date',
-        'unpub_date',
-        'parent',
-        'isfolder',
-        'introtext',
-        'content',
-        'richtext',
-        'template',
-        'menuindex',
-        'searchable',
-        'cacheable',
-        'createdon',
-        'createdby',
-        'editedon',
-        'editedby',
-        'deleted',
-        'deletedon',
-        'deletedby',
-        'publishedon',
-        'publishedby',
-        'menutitle',
-        'donthit',
-        'privateweb',
-        'privatemgr',
-        'content_dispo',
-        'hidemenu',
-        'alias_visible'
+        'id' => '',
+        'type' => '',
+        'contentType' => '',
+        'pagetitle' => '',
+        'longtitle' => '',
+        'description' => '',
+        'alias' => '',
+        'link_attributes' => '',
+        'published' => '',
+        'pub_date' => '',
+        'unpub_date' => '',
+        'parent' => '',
+        'isfolder' => '',
+        'introtext' => '',
+        'content' => '',
+        'richtext' => '',
+        'template' => '',
+        'menuindex' => '',
+        'searchable' => '',
+        'cacheable' => '',
+        'createdon' => '',
+        'createdby' => '',
+        'editedon' => '',
+        'editedby' => '',
+        'deleted' => '',
+        'deletedon' => '',
+        'deletedby' => '',
+        'publishedon' => '',
+        'publishedby' => '',
+        'menutitle' => '',
+        'donthit' => '',
+        'privateweb' => '',
+        'privatemgr' => '',
+        'content_dispo' => '',
+        'hidemenu' => '',
+        'alias_visible' => ''
     ];
 
     protected $isAjax;
@@ -330,8 +330,6 @@ class Cart extends ShkF
     {
         $ids = implode(',', $this->_getDocs());
         if ($ids) {
-            $this->default_fields = array_flip($this->default_fields);
-
             foreach ($this->out['carts'] as $cartId => $cart) {
                 $this->sum = 0;
                 $this->sumTotal = 0;
@@ -362,7 +360,6 @@ class Cart extends ShkF
 
                     $params = $this->parseParams($this->session['params'][$k]);
                     $item = array_merge($item, $params);
-                    unset($params[$this->config['prefix'] . '.params']);
                     $this->default_fields = array_merge($this->default_fields, $params);
 
                     $item = $this->_render($cartId, $item, [
@@ -382,22 +379,17 @@ class Cart extends ShkF
                         $tvPrice . '.total' => $priceTotal,
                         $tvPrice . '.total.format' => $this->number_format($priceTotal, $this->config['price_decimals'],
                             $this->config['price_thousands_sep']),
-                        $this->config['prefix'] . '.params' => $this->session['params'][$k]
+                        $this->config['prefix'] . '.params' => $params[$this->config['prefix'] . '.params']
                     ];
 
                     $item = array_merge($item, $placeholders);
+                    $this->default_fields = array_merge($this->default_fields, $placeholders);
 
                     $this->sum += $placeholders[$tvPrice . '.total'];
                     $this->count++;
                     $this->countItems += $item['count'];
 
-                    if (!isset($this->out['items'][$k])) {
-                        $this->default_fields = array_merge($this->default_fields, $placeholders);
-                        $this->out['items'][$k] = array_intersect_key($item, $this->default_fields);
-                    }
-                    if (!isset($this->out['carts'][$cartId]['items'][$k])) {
-
-                    }
+                    $this->out['items'][$k] = array_intersect_key($item, $this->default_fields);
                     $this->out['carts'][$cartId]['items'][$k] = array_diff_key($item, $this->out['items'][$k]);
                 }
 
@@ -417,16 +409,10 @@ class Cart extends ShkF
 
                 if ($this->getDLConfig($cartId, 'async')) {
                     if ($this->getDLConfig($cartId, 'dataType') == 'html') {
-                        $this->out['carts'][$cartId]['items'] = empty($this->count) ? [] : array_merge_recursive($this->out['carts'][$cartId]['items'],
-                            $this->out['items']);
                         $this->out['carts'][$cartId]['html'] = $this->renderTemplates();
                     } elseif ($this->getDLConfig($cartId, 'dataType') == 'info') {
                         unset($this->out['carts'][$cartId]['items']);
                     }
-                } else {
-                    $this->out['carts'][$cartId]['items'] = empty($this->count) ? [] : array_merge_recursive($this->out['carts'][$cartId]['items'],
-                        $this->out['items']);
-                    //unset($this->out['items']);
                 }
 
                 unset($this->out['cart']['cart.id']);
@@ -520,7 +506,8 @@ class Cart extends ShkF
                 'param' => ltrim($param, '||')
             ]);
         }
-        $out[$key] = $this->parseTpl($this->DL_config[$this->cartId]['tplParams'], $_params);
+        $out[$key] = !empty($_params['params']) ? $this->parseTpl($this->DL_config[$this->cartId]['tplParams'],
+            $_params) : '';
         $out = array_merge($out, $this->array_keys_to_string([
             $key => $params
         ]));
@@ -560,24 +547,23 @@ class Cart extends ShkF
      */
     protected function renderTemplates()
     {
-        $data = $this->out['cart'];
-        $data['cart.id'] = $this->cartId;
-        $data['cart.wrap'] = '';
+        $cart = $this->out['cart'];
+        $cart['cart.id'] = $this->cartId;
+        $cart['cart.wrap'] = '';
         if (!empty($this->count)) {
-//            $items = empty($this->out['carts'][$this->cartId]['items']) ? $this->out['items'] : array_merge_recursive($this->out['carts'][$this->cartId]['items'],
-//                $this->out);
-            $items = $this->out['carts'][$this->cartId]['items'];
+            $items = empty($this->out['carts'][$this->cartId]['items']) ? $this->out['items'] : array_merge_recursive($this->out['items'],
+                $this->out['carts'][$this->cartId]['items']);
             foreach ($items as $k => $v) {
-                $data['cart.wrap'] .= $this->parseTpl($this->DL_config[$this->cartId]['tpl'], $v);
+                $cart['cart.wrap'] .= $this->parseTpl($this->DL_config[$this->cartId]['tpl'], $v);
             }
-            $data = $this->parseTpl($this->DL_config[$this->cartId]['ownerTPL'], $data);
+            $out = $this->parseTpl($this->DL_config[$this->cartId]['ownerTPL'], $cart);
         } else {
-            $data = $this->parseTpl($this->DL_config[$this->cartId]['noneTPL'], $data);
+            $out = $this->parseTpl($this->DL_config[$this->cartId]['noneTPL'], $cart);
         }
-        $data = $this->modx->cleanUpMODXTags($data);
-        $data = str_ireplace('sanitized_by_modx<s cript', '<script', $data);
+        $out = $this->modx->cleanUpMODXTags($out);
+        $out = str_ireplace('sanitized_by_modx<s cript', '<script', $out);
 
-        return $data;
+        return $out;
     }
 
     /**
