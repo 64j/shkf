@@ -89,48 +89,6 @@ class Cart extends ShkF
         $this->setActions();
         $this->setItems();
 
-        $this->out['cart'] = [
-            'cart.count' => $this->float($this->count),
-            'cart.count.items' => $this->float($this->countItems),
-            'cart.sum' => $this->float($this->sum),
-            'cart.sum.format' => $this->number_format($this->sum, $this->config['price_decimals'],
-                $this->config['price_thousands_sep']),
-            'cart.sum.total' => $this->float($this->sumTotal),
-            'cart.sum.total.format' => $this->number_format($this->sumTotal, $this->config['price_decimals'],
-                $this->config['price_thousands_sep'])
-        ];
-
-        foreach ($this->out['carts'] as $cartId => $cart) {
-            $this->cartId = $cartId;
-            $this->out['carts'][$cartId] = [
-                'cart' => array_merge($this->out['cart'], [
-                    'cart.id' => $cartId
-                ]),
-                //'items' => empty($this->count) ? [] : $cart
-                'items' => empty($this->count) ? [] : array_merge_recursive($cart, $this->out['items'])
-            ];
-            if ($this->getDLConfig($cartId, 'async')) {
-                if ($this->getDLConfig($cartId, 'dataType') == 'html') {
-                    $this->out['carts'][$cartId]['html'] = $this->renderTemplates($this->out['carts'][$cartId]);
-                    $this->out['carts'][$cartId]['items'] = $cart;
-                } elseif ($this->getDLConfig($cartId, 'dataType') == 'info') {
-                    unset($this->out['carts'][$cartId]['items']);
-                }
-            }
-            if ($this->isAjax) {
-                unset($this->out['carts'][$cartId]['cart']);
-                if ($this->getDLConfig($cartId, 'dataType') == 'html') {
-                    unset($this->out['carts'][$cartId]['items']);
-                }
-            }
-        }
-
-        $this->out = $this->prepare($this->getConfig('prepareWrap', ''), $this->out);
-
-        if (empty($this->isAjax)) {
-            $this->out = $this->out['carts'][$this->cartId];
-        }
-
         return $this;
     }
 
@@ -148,9 +106,11 @@ class Cart extends ShkF
             'prepare' => '',
             'tvList' => '',
             'selectFields' => 'c.id, c.parent, c.pagetitle, c.longtitle, c.alias, c.isfolder, c.introtext, c.template',
-            'noneTPL' => '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>',
             'ownerTPL' => '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>',
-            'tpl' => '@CODE:<a href="[+url+]">[+pagetitle+]</a>'
+            'noneTPL' => '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>',
+            'tpl' => '@CODE:<a href="[+url+]">[+pagetitle+]</a>',
+            'tplParams' => '@CODE:<div>as[+params+]</div>',
+            'tplParam' => '@CODE:[+param+]<br>',
         ];
 
         if (!empty($this->params['carts'])) {
@@ -167,7 +127,7 @@ class Cart extends ShkF
             $this->out['carts'][$this->cartId] = [];
         }
 
-        array_push($this->default_fields, $this->config['prefix'] . '.params');
+        //array_push($this->default_fields, $this->config['prefix'] . '.params');
     }
 
     /**
@@ -207,25 +167,26 @@ class Cart extends ShkF
     }
 
     /**
-     * @param $id
+     * @param $key
      * @return string
      */
-    protected function getKey($id)
+    protected function getKey($key)
     {
-        $id = trim($id);
-        $params = $this->getItemParams();
-        if (!isset($this->session['items'][$id])) {
-            $id .= '#' . md5($this->json_encode($params));
+        $key = trim($key);
+        $params = $this->getItemParams($key);
+        if (!isset($this->session['items'][$key])) {
+            $key .= '#' . md5($this->json_encode($params));
         }
-        $this->session['params'][$id] = $params;
+        $this->session['params'][$key] = $params;
 
-        return $id;
+        return $key;
     }
 
     /**
+     * @param string $key
      * @return array
      */
-    protected function getItemParams()
+    protected function getItemParams($key = '')
     {
         $params = [];
         if (!empty($this->request) && isset($this->request['params'])) {
@@ -242,6 +203,8 @@ class Cart extends ShkF
                 }
                 array_multisort($params);
             }
+        } else {
+            $params = !empty($this->session['params'][$key]) ? $this->session['params'][$key] : [];
         }
 
         return $params;
@@ -338,9 +301,15 @@ class Cart extends ShkF
     {
         if ($this->docs = $this->getDocs()) {
             $ids = implode(',', $this->docs);
-            $tvPrice = '';
             $this->default_fields = array_flip($this->default_fields);
             foreach ($this->out['carts'] as $cartId => $cart) {
+                $this->sum = 0;
+                $this->sumTotal = 0;
+                $this->count = 0;
+                $this->countItems = 0;
+                $this->cartId = $cartId;
+                $cart = [];
+
                 $this->modx->runSnippet('DocLister', array_merge($this->DL_config[$cartId], [
                     'parents' => '',
                     'idType' => 'documents',
@@ -361,41 +330,99 @@ class Cart extends ShkF
                 $i = 0;
                 foreach ($this->session['items'] as $k => $count) {
                     $id = explode('#', $k)[0];
-                    $item = $this->_render($cartId, $this->docs[$id], [
+                    $item = $this->docs[$id];
+
+                    $params = $this->parseParams($this->session['params'][$k]);
+                    $item = array_merge($item, $params);
+                    unset($params[$this->config['prefix'] . '.params']);
+                    $this->default_fields = array_merge($this->default_fields, $params);
+
+                    $item = $this->_render($cartId, $item, [
                         'key' => $k,
                         'count' => $count,
                         'iteration' => $i++,
-                        $tvPrice => $this->setCalcParams($k, $id, $tvPrice),
-                        $this->config['prefix'] . '.params' => $this->session['params'][$k]
+                        $tvPrice => $this->setCalcParams($k, $id, $tvPrice)
                     ], $extPrepare);
 
                     $item = $this->prepare($this->getConfig('prepareTpl', ''), $item);
 
-                    $params = $this->array_keys_to_string([
-                        $this->config['prefix'] . '.params' => $item[$this->config['prefix'] . '.params']
-                    ]);
-
                     $priceTotal = $item[$tvPrice] * $item['count'];
 
-                    $params[$tvPrice . '.format'] = $this->number_format($item[$tvPrice], $this->config['price_decimals'],
-                        $this->config['price_thousands_sep']);
-                    $params[$tvPrice . '.total'] = $priceTotal;
-                    $params[$tvPrice . '.total.format'] = $this->number_format($priceTotal, $this->config['price_decimals'],
-                        $this->config['price_thousands_sep']);
+                    $placeholders = [
+                        $tvPrice . '.format' => $this->number_format($item[$tvPrice], $this->config['price_decimals'],
+                            $this->config['price_thousands_sep']),
+                        $tvPrice . '.total' => $priceTotal,
+                        $tvPrice . '.total.format' => $this->number_format($priceTotal, $this->config['price_decimals'],
+                            $this->config['price_thousands_sep']),
+                        $this->config['prefix'] . '.params' => $this->session['params'][$k]
+                    ];
 
-                    $item = array_merge($item, $params);
-                    $this->default_fields = array_merge($this->default_fields, $params);
+                    $this->default_fields = array_merge($this->default_fields, $placeholders);
+                    $item = array_merge($item, $placeholders);
 
-                    $this->sum += $item[$tvPrice . '.total'];
+                    $this->sum += $placeholders[$tvPrice . '.total'];
                     $this->count++;
                     $this->countItems += $item['count'];
 
                     $this->out['items'][$k] = array_intersect_key($item, $this->default_fields);
-                    $this->out['carts'][$cartId][$k] = array_diff_key($item, $this->out['items'][$k]);
+                    $cart['items'][$k] = array_diff_key($item, $this->out['items'][$k]);
+                }
+
+                $this->sumTotal = $this->sum;
+
+                $cart['cart'] = [
+                    'cart.id' => $cartId,
+                    'cart.count' => $this->float($this->count),
+                    'cart.count.items' => $this->float($this->countItems),
+                    'cart.sum' => $this->float($this->sum),
+                    'cart.sum.format' => $this->number_format($this->sum, $this->config['price_decimals'],
+                        $this->config['price_thousands_sep']),
+                    'cart.sum.total' => $this->float($this->sumTotal),
+                    'cart.sum.total.format' => $this->number_format($this->sumTotal, $this->config['price_decimals'],
+                        $this->config['price_thousands_sep'])
+                ];
+
+                if ($this->getDLConfig($cartId, 'async')) {
+                    if ($this->getDLConfig($cartId, 'dataType') == 'html') {
+                        $_cart = $cart;
+                        $_cart['items'] = empty($this->count) ? [] : array_merge_recursive($_cart['items'],
+                            $this->out['items']);
+                        $cart['html'] = $this->renderTemplates($_cart);
+                    } elseif ($this->getDLConfig($cartId, 'dataType') == 'info') {
+                        unset($cart['items']);
+                    }
+                } else {
+                    $cart['items'] = empty($this->count) ? [] : array_merge_recursive($cart['items'],
+                        $this->out['items']);
+                    unset($this->out['items']);
+                }
+
+                $this->out['carts'][$cartId] = $cart;
+                unset($cart['cart']['cart.id']);
+                $this->out['cart'] = $cart['cart'];
+
+                if ($this->isAjax) {
+                    unset($this->out['carts'][$cartId]['cart']);
+                    if ($this->getDLConfig($cartId, 'dataType') == 'html') {
+                        unset($this->out['carts'][$cartId]['items']);
+                    }
                 }
             }
+        } else {
+            $this->out['cart'] = [
+                'cart.count' => 0,
+                'cart.count.items' => 0,
+                'cart.sum' => 0,
+                'cart.sum.format' => 0,
+                'cart.sum.total' => 0,
+                'cart.sum.total.format' => 0
+            ];
+        }
 
-            $this->sumTotal = $this->sum;
+        $this->out = $this->prepare($this->getConfig('prepareWrap', ''), $this->out);
+
+        if (empty($this->isAjax)) {
+            $this->out = $this->out['carts'][$this->cartId];
         }
     }
 
@@ -442,6 +469,37 @@ class Cart extends ShkF
         }
 
         return $item;
+    }
+
+    /**
+     * @param array $params
+     * @return array
+     */
+    protected function parseParams($params = [])
+    {
+        $out = [];
+        $key = $this->config['prefix'] . '.params';
+
+        $_params = [];
+        $_params['params'] = '';
+        foreach ($params as $name => $values) {
+            $out[$key . '.' . $name] = '';
+            $param = '';
+            foreach ($values as $k => $v) {
+                $out[$key . '.' . $name] .= '||' . $v['value'];
+                $param .= '||' . $v['value'];
+            }
+            $out[$key . '.' . $name] = ltrim($out[$key . '.' . $name], '||');
+            $_params['params'] .= $this->parseTpl($this->DL_config[$this->cartId]['tplParam'], [
+                'param' => ltrim($param, '||')
+            ]);
+        }
+        $out[$key] = $this->parseTpl($this->DL_config[$this->cartId]['tplParams'], $_params);
+        $out = array_merge($out, $this->array_keys_to_string([
+            $key => $params
+        ]));
+
+        return $out;
     }
 
     /**

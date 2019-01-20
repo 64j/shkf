@@ -12,8 +12,10 @@ $params = !empty($params) ? $params : [];
 $params['id'] = !empty($params['id']) ? $params['id'] : uniqid('cart_');
 $params['async'] = isset($params['async']) ? $params['async'] : 1;
 $params['dataType'] = !empty($params['dataType']) ? $params['dataType'] : 'json';
-$params['noneTPL'] = !empty($params['noneTPL']) ? $params['noneTPL'] : '@CODE:<div id="' . $params['id'] . '">[+cart.count+]</div>';
 $params['ownerTPL'] = !empty($params['ownerTPL']) ? $params['ownerTPL'] : '@CODE:<div id="' . $params['id'] . '">[+cart.count+]</div>';
+$params['noneTPL'] = !empty($params['noneTPL']) ? $params['noneTPL'] : $params['ownerTPL'];
+$params['tplParams'] = !empty($params['tplParams']) ? $params['tplParams'] : '@CODE:<div>[+params+]</div>';
+$params['tplParam'] = !empty($params['tplParam']) ? $params['tplParam'] : '@CODE:[+param+]<br>';
 
 $modx->jscripts[$params['prefix'] . '_jscripts'] = '
 <script src="assets/modules/shkf/js/shkf.js?v=128"></script>
@@ -25,7 +27,7 @@ $DL_config = array_diff($params, $config);
 $_ = ['[*', '*]', '[(', ')]', '{{', '}}', '[[', ']]', '[+', '+]'];
 $__ = ['\[\*', '\*\]', '\[\(', '\)\]', '\{\{', '\}\}', '\[\[', '\]\]', '\[\+', '\+\]'];
 foreach ($DL_config as $k => $v) {
-    if (in_array($k, ['ownerTPL', 'tpl', 'noneTPL'])) {
+    if (in_array($k, ['ownerTPL', 'tpl', 'noneTPL', 'tplParams', 'tplParam'])) {
         $v = $modx->getTpl($v);
         $v = str_replace($_, $__, $v);
     }
@@ -46,6 +48,5 @@ if (empty($params['async'])) {
         ->run();
     return $shkf->toHtml();
 } else {
-    return $params['dataType'] == 'info' ? $modx->parseText($modx->getTpl($params['ownerTPL']),
-        $params) : '<div id="' . $params['id'] . '">[+cart.count+]</div>';
+    return $modx->parseText($modx->getTpl($params['ownerTPL']), ['cart.id' => $params['id']]);
 }

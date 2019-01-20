@@ -236,19 +236,19 @@ var shkf = (function(options) {
     xhr.responseType = 'json';
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4) {
-        var response = xhr.response, k;
+        var response = xhr.response, cartId, cart, items, params, param, tpl, k;
         if (xhr.status === 200 && response) {
-          console.log(response);
           if (typeof response['carts'] !== 'undefined') {
-            for (var cartId in response['carts']) {
+            for (cartId in response['carts']) {
               if (response['carts'].hasOwnProperty(cartId)) {
                 var cartElement = document.getElementById(cartId);
                 if (!cartElement) {
                   continue;
                 }
-                var cart = response['carts'][cartId];
+                cart = response['carts'][cartId];
                 cart['cart'] = response['cart'];
                 cart['cart']['cart.id'] = cartId;
+                cart['cart']['cart.wrap'] = '';
 
                 if (typeof cart['html'] !== 'undefined') {
                   cartElement.outerHTML = cart['html'];
@@ -262,24 +262,42 @@ var shkf = (function(options) {
                     (window.execScript) ? window.execScript(_s) : window.setTimeout(_s, 0);
                   }
                 } else {
-                  var tpl;
                   if (response['cart']['cart.count']) {
+                    items = response['items'];
                     if (!cart['items']) {
                       cart['items'] = {};
                     }
-                    for (var k in response['items']) {
-                      if (response['items'].hasOwnProperty(k)) {
+                    for (k in cart['items']) {
+                      if (cart['items'].hasOwnProperty(k)) {
                         for (var kk in cart['items'][k]) {
                           if (cart['items'][k].hasOwnProperty(kk)) {
-                            cart['items'][k][kk] = response['items'][k][kk];
+                            items[k][kk] = cart['items'][k][kk];
                           }
                         }
                       }
                     }
+                    delete cart['items'];
                     if (typeof _this.carts[cartId]['tpl'] !== 'undefined') {
-                      for (k in cart['items']) {
-                        if (cart['items'].hasOwnProperty(k)) {
-                          cart['cart']['cart.wrap'] += _this.tpl(_this.carts[cartId]['tpl'], cart['items'][k]);
+                      for (k in items) {
+                        if (items.hasOwnProperty(k)) {
+                          params = items[k][_this.prefix + '.params'];
+                          for (var p in params) {
+                            if (params.hasOwnProperty(p)) {
+                              param = [];
+                              for (var pp in params[p]) {
+                                if (params[p].hasOwnProperty(pp)) {
+                                  param.push(params[p][pp]['value']);
+                                }
+                              }
+                              params[p] = _this.tpl(_this.carts[cartId]['tplParam'], {
+                                param: param.join('||')
+                              });
+                            }
+                          }
+                          items[k][_this.prefix + '.params'] = _this.tpl(_this.carts[cartId]['tplParams'], {
+                            params: Object.values(params).join('')
+                          });
+                          cart['cart']['cart.wrap'] += _this.tpl(_this.carts[cartId]['tpl'], items[k]);
                         }
                       }
                     }
