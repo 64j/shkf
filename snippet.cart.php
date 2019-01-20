@@ -13,9 +13,9 @@ require_once MODX_BASE_PATH . 'assets/modules/shkf/controller/cart.php';
 
 $params = !empty($params) ? $params : [];
 $params['id'] = !empty($params['id']) ? $params['id'] : uniqid('cart_');
-$params['async'] = isset($params['async']) ? $params['async'] : 1;
-$params['dataType'] = !empty($params['dataType']) ? $params['dataType'] : 'json';
-$params['ownerTPL'] = !empty($params['ownerTPL']) ? $params['ownerTPL'] : '@CODE:<div id="' . $params['id'] . '">[+cart.count+]</div>';
+$params['async'] = isset($params['async']) ? $params['async'] : false;
+$params['dataType'] = !empty($params['dataType']) ? $params['dataType'] : 'html';
+$params['ownerTPL'] = !empty($params['ownerTPL']) ? $params['ownerTPL'] : '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>';
 $params['noneTPL'] = !empty($params['noneTPL']) ? $params['noneTPL'] : $params['ownerTPL'];
 $params['tplParams'] = !empty($params['tplParams']) ? $params['tplParams'] : '@CODE:<div>[+params+]</div>';
 $params['tplParam'] = !empty($params['tplParam']) ? $params['tplParam'] : '@CODE:[+param+]<br>';
@@ -44,10 +44,12 @@ $modx->regClientHTMLBlock('<script id="options_' . $params['prefix'] . '_' . $pa
 shkf.init(' . $DL_config . ');
 </script>');
 
+$shkf = \ShkF\Cart::getInstance($params);
+
 if (empty($params['async'])) {
-    return \ShkF\Cart::getInstance($params)
-        ->run()
+    return $shkf->run()
         ->toHtml();
 } else {
-    return $modx->parseText($modx->getTpl($params['ownerTPL']), ['cart.id' => $params['id']]);
+    $tpl = empty($shkf->count) ? $params['noneTPL'] : $params['ownerTPL'];
+    return $modx->parseText($modx->getTpl($tpl), ['cart.id' => $params['id']]);
 }

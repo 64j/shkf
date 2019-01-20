@@ -66,14 +66,11 @@ class Cart extends ShkF
      */
     public static function getInstance($params = [])
     {
-        if (self::$instance != null) {
-            self::$instance->setParams($params);
-            return self::$instance;
+        if (self::$instance === null) {
+            self::$instance = new static($params);
         }
 
-        self::$instance = new self($params);
-
-        return self::$instance;
+        return self::$instance->set($params);
     }
 
     /**
@@ -143,7 +140,7 @@ class Cart extends ShkF
             'ownerTPL' => '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>',
             'noneTPL' => '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>',
             'tpl' => '@CODE:<a href="[+url+]">[+pagetitle+]</a>',
-            'tplParams' => '@CODE:<div>as[+params+]</div>',
+            'tplParams' => '@CODE:<div>[+params+]</div>',
             'tplParam' => '@CODE:[+param+]<br>',
         ];
 
@@ -345,9 +342,9 @@ class Cart extends ShkF
                     'idType' => 'documents',
                     'documents' => $ids,
                     'sortType' => 'doclist',
-                    'saveDLObject' => '_SHKF',
+                    'saveDLObject' => 'DL_SHKF',
                 ]));
-                $DL = $this->modx->getPlaceholder('_SHKF');
+                $DL = $this->modx->getPlaceholder('DL_SHKF');
                 $this->docs = $DL->docsCollection()
                     ->toArray();
 
@@ -412,7 +409,7 @@ class Cart extends ShkF
 
                 if ($this->getDLConfig($cartId, 'async')) {
                     if ($this->getDLConfig($cartId, 'dataType') == 'html') {
-                        $this->out['carts'][$cartId]['html'] = $this->renderTemplates();
+                        $this->out['carts'][$cartId]['html'] = $this->toHtml();
                     } elseif ($this->getDLConfig($cartId, 'dataType') == 'info') {
                         unset($this->out['carts'][$cartId]['items']);
                     }
@@ -546,35 +543,29 @@ class Cart extends ShkF
     }
 
     /**
+     * @param string $cartId
      * @return string
      */
-    protected function renderTemplates()
+    public function toHtml($cartId = '')
     {
+        $cartId = !empty($cartId) ? $cartId : $this->cartId;
         $cart = $this->out['cart'];
-        $cart['cart.id'] = $this->cartId;
+        $cart['cart.id'] = $cartId;
         $cart['cart.wrap'] = '';
         if (!empty($this->count)) {
-            $items = empty($this->out['carts'][$this->cartId]['items']) ? $this->out['items'] : array_merge_recursive($this->out['items'],
-                $this->out['carts'][$this->cartId]['items']);
+            $items = empty($this->out['carts'][$cartId]['items']) ? $this->out['items'] : array_merge_recursive($this->out['items'],
+                $this->out['carts'][$cartId]['items']);
             foreach ($items as $k => $v) {
-                $cart['cart.wrap'] .= $this->parseTpl($this->DL_config[$this->cartId]['tpl'], $v);
+                $cart['cart.wrap'] .= $this->parseTpl($this->DL_config[$cartId]['tpl'], $v);
             }
-            $out = $this->parseTpl($this->DL_config[$this->cartId]['ownerTPL'], $cart);
+            $out = $this->parseTpl($this->DL_config[$cartId]['ownerTPL'], $cart);
         } else {
-            $out = $this->parseTpl($this->DL_config[$this->cartId]['noneTPL'], $cart);
+            $out = $this->parseTpl($this->DL_config[$cartId]['noneTPL'], $cart);
         }
         $out = $this->modx->cleanUpMODXTags($out);
         $out = str_ireplace('sanitized_by_modx<s cript', '<script', $out);
 
         return $out;
-    }
-
-    /**
-     * @return string
-     */
-    public function toHtml()
-    {
-        return $this->renderTemplates();
     }
 
 }

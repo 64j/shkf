@@ -51,7 +51,7 @@ abstract class ShkF
         $this->sumTotal = 0;
         $this->count = 0;
         $this->countItems = 0;
-        $this->out = !is_null($this->out) ? $this->out : null;
+        $this->out = null;
 
         $this->getConfig('', [
             'prefix' => 'shkf',
@@ -64,7 +64,12 @@ abstract class ShkF
 
         $this->getSession();
 
-        $this->params = array_merge($_REQUEST, $this->setParams($params));
+        if (!empty($params)) {
+            $this->params = $params;
+        }
+
+        $this->params = array_merge($_REQUEST, $this->params);
+
         if (!empty($this->params)) {
             foreach ($this->params as $k => $v) {
                 if (substr($k, 0, strlen($this->config['prefix'] . '-')) == $this->config['prefix'] . '-') {
@@ -205,13 +210,18 @@ abstract class ShkF
         return $data;
     }
 
-    protected function setParams($params = [])
+    /**
+     * устанавливаем параметры
+     * @param array $params
+     * @return $this
+     */
+    public function set($params = [])
     {
         if (!empty($params)) {
             $this->params = $params;
         }
 
-        return $this->params;
+        return $this;
     }
 
     /**
