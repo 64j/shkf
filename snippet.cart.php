@@ -8,6 +8,9 @@ if (!defined('MODX_BASE_PATH')) {
     die('Unauthorized access.');
 }
 
+require_once MODX_BASE_PATH . 'assets/modules/shkf/abstract.shkf.php';
+require_once MODX_BASE_PATH . 'assets/modules/shkf/controller/cart.php';
+
 $params = !empty($params) ? $params : [];
 $params['id'] = !empty($params['id']) ? $params['id'] : uniqid('cart_');
 $params['async'] = isset($params['async']) ? $params['async'] : 1;
@@ -42,11 +45,9 @@ shkf.init(' . $DL_config . ');
 </script>');
 
 if (empty($params['async'])) {
-    include_once 'abstract.shkf.php';
-    include_once 'controller/cart.php';
-    $shkf = \ShkF\Cart::getInstance($params)
-        ->run();
-    return $shkf->toHtml();
+    return \ShkF\Cart::getInstance($params)
+        ->run()
+        ->toHtml();
 } else {
     return $modx->parseText($modx->getTpl($params['ownerTPL']), ['cart.id' => $params['id']]);
 }

@@ -17,10 +17,9 @@ if (empty($modx->snippetCache['shkfCartProps']) || (!isset($_SERVER['HTTP_X_REQU
     $modx->sendErrorPage();
 }
 
-header('content-type: application/json');
+require_once MODX_BASE_PATH . 'assets/modules/shkf/abstract.shkf.php';
+require_once MODX_BASE_PATH . 'assets/modules/shkf/controller/cart.php';
 
-include_once 'abstract.shkf.php';
-include_once 'controller/cart.php';
-
-echo (new \ShkF\Cart())->run()
+echo \ShkF\Cart::getInstance()
+    ->run()
     ->toJson();

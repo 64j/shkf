@@ -11,6 +11,8 @@ abstract class ShkF
 {
     protected $modx;
 
+    protected $DL;
+
     protected $DL_config;
 
     protected $request;
@@ -21,9 +23,7 @@ abstract class ShkF
 
     protected $carts;
 
-    protected $params;
-
-    protected $items;
+    protected $params = [];
 
     protected $docs;
 
@@ -46,8 +46,12 @@ abstract class ShkF
     public function __construct($params = [])
     {
         $this->modx = evolutionCMS();
-        $this->out = [];
         $this->request = [];
+        $this->sum = 0;
+        $this->sumTotal = 0;
+        $this->count = 0;
+        $this->countItems = 0;
+        $this->out = !is_null($this->out) ? $this->out : null;
 
         $this->getConfig('', [
             'prefix' => 'shkf',
@@ -60,7 +64,7 @@ abstract class ShkF
 
         $this->getSession();
 
-        $this->params = array_merge($_REQUEST, $params);
+        $this->params = array_merge($_REQUEST, $this->setParams($params));
         if (!empty($this->params)) {
             foreach ($this->params as $k => $v) {
                 if (substr($k, 0, strlen($this->config['prefix'] . '-')) == $this->config['prefix'] . '-') {
@@ -78,6 +82,19 @@ abstract class ShkF
     }
 
     /**
+     * @param $name
+     * @param $arguments
+     */
+    public function __call($name, $arguments)
+    {
+    }
+
+    // Prevent cloning of the instance
+    protected function __clone()
+    {
+    }
+
+    /**
      * @return mixed
      */
     public function toArray()
@@ -90,6 +107,8 @@ abstract class ShkF
      */
     public function toJson()
     {
+        header('content-type: application/json');
+
         return $this->json_encode($this->out);
     }
 
@@ -186,12 +205,21 @@ abstract class ShkF
         return $data;
     }
 
+    protected function setParams($params = [])
+    {
+        if (!empty($params)) {
+            $this->params = $params;
+        }
+
+        return $this->params;
+    }
+
     /**
      * @param string $key
      * @param string $default
      * @return array | string
      */
-    protected function getRequest($key = '', $default = '')
+    public function getRequest($key = '', $default = '')
     {
         if ($key == '') {
             $out = $this->request;
@@ -213,7 +241,7 @@ abstract class ShkF
      * @param string $default
      * @return array
      */
-    protected function getSession($key = '', $default = '')
+    public function getSession($key = '', $default = '')
     {
         if ($key == '') {
             if ($this->modx->getLoginUserID('web')) {
@@ -226,7 +254,7 @@ abstract class ShkF
             if (isset($this->session[$key])) {
                 $out = $this->session[$key];
             } else {
-                $out = $this->session[$key] = $default;
+                $out = $default;
             }
         } else {
             $out = $this->session;
@@ -240,7 +268,7 @@ abstract class ShkF
      * @param string $default
      * @return string| array
      */
-    protected function getConfig($key = '', $default = '')
+    public function getConfig($key = '', $default = '')
     {
         if ($key == '') {
             $this->config = empty($default) ? [] : $default;

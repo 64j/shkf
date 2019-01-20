@@ -67,10 +67,48 @@ class Cart extends ShkF
     public static function getInstance($params = [])
     {
         if (self::$instance != null) {
+            self::$instance->setParams($params);
             return self::$instance;
         }
 
-        return new self($params);
+        self::$instance = new self($params);
+
+        return self::$instance;
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->toHtml();
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getDocs()
+    {
+        return $this->docs;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getItems()
+    {
+        return $this->out['items'];
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getCart()
+    {
+        $out = $this->out['cart'];
+        unset($out['cart.id']);
+
+        return $out;
     }
 
     /**
@@ -78,13 +116,6 @@ class Cart extends ShkF
      */
     public function run()
     {
-        $this->out = [];
-
-        $this->sum = 0;
-        $this->sumTotal = 0;
-        $this->count = 0;
-        $this->countItems = 0;
-
         $this->setStartConfigs();
         $this->setActions();
         $this->setItems();
@@ -297,25 +328,25 @@ class Cart extends ShkF
      */
     protected function setItems()
     {
-        if ($this->docs = $this->getDocs()) {
-            $ids = implode(',', $this->docs);
+        $ids = implode(',', $this->_getDocs());
+        if ($ids) {
             $this->default_fields = array_flip($this->default_fields);
+
             foreach ($this->out['carts'] as $cartId => $cart) {
                 $this->sum = 0;
                 $this->sumTotal = 0;
                 $this->count = 0;
                 $this->countItems = 0;
                 $this->cartId = $cartId;
-                $cart = [];
 
                 $this->modx->runSnippet('DocLister', array_merge($this->DL_config[$cartId], [
                     'parents' => '',
                     'idType' => 'documents',
                     'documents' => $ids,
                     'sortType' => 'doclist',
-                    'saveDLObject' => 'DLAPI',
+                    'saveDLObject' => '_SHKF',
                 ]));
-                $DL = $this->modx->getPlaceholder('DLAPI');
+                $DL = $this->modx->getPlaceholder('_SHKF');
                 $this->docs = $DL->docsCollection()
                     ->toArray();
 
@@ -354,20 +385,25 @@ class Cart extends ShkF
                         $this->config['prefix'] . '.params' => $this->session['params'][$k]
                     ];
 
-                    $this->default_fields = array_merge($this->default_fields, $placeholders);
                     $item = array_merge($item, $placeholders);
 
                     $this->sum += $placeholders[$tvPrice . '.total'];
                     $this->count++;
                     $this->countItems += $item['count'];
 
-                    $this->out['items'][$k] = array_intersect_key($item, $this->default_fields);
-                    $cart['items'][$k] = array_diff_key($item, $this->out['items'][$k]);
+                    if (!isset($this->out['items'][$k])) {
+                        $this->default_fields = array_merge($this->default_fields, $placeholders);
+                        $this->out['items'][$k] = array_intersect_key($item, $this->default_fields);
+                    }
+                    if (!isset($this->out['carts'][$cartId]['items'][$k])) {
+
+                    }
+                    $this->out['carts'][$cartId]['items'][$k] = array_diff_key($item, $this->out['items'][$k]);
                 }
 
                 $this->sumTotal = $this->sum;
 
-                $cart['cart'] = [
+                $this->out['cart'] = [
                     'cart.id' => $cartId,
                     'cart.count' => $this->float($this->count),
                     'cart.count.items' => $this->float($this->countItems),
@@ -381,22 +417,19 @@ class Cart extends ShkF
 
                 if ($this->getDLConfig($cartId, 'async')) {
                     if ($this->getDLConfig($cartId, 'dataType') == 'html') {
-                        $_cart = $cart;
-                        $_cart['items'] = empty($this->count) ? [] : array_merge_recursive($_cart['items'],
+                        $this->out['carts'][$cartId]['items'] = empty($this->count) ? [] : array_merge_recursive($this->out['carts'][$cartId]['items'],
                             $this->out['items']);
-                        $cart['html'] = $this->renderTemplates($_cart);
+                        $this->out['carts'][$cartId]['html'] = $this->renderTemplates();
                     } elseif ($this->getDLConfig($cartId, 'dataType') == 'info') {
-                        unset($cart['items']);
+                        unset($this->out['carts'][$cartId]['items']);
                     }
                 } else {
-                    $cart['items'] = empty($this->count) ? [] : array_merge_recursive($cart['items'],
+                    $this->out['carts'][$cartId]['items'] = empty($this->count) ? [] : array_merge_recursive($this->out['carts'][$cartId]['items'],
                         $this->out['items']);
-                    unset($this->out['items']);
+                    //unset($this->out['items']);
                 }
 
-                $this->out['carts'][$cartId] = $cart;
-                unset($cart['cart']['cart.id']);
-                $this->out['cart'] = $cart['cart'];
+                unset($this->out['cart']['cart.id']);
 
                 if ($this->isAjax) {
                     unset($this->out['carts'][$cartId]['cart']);
@@ -417,16 +450,12 @@ class Cart extends ShkF
         }
 
         $this->out = $this->prepare($this->getConfig('prepareWrap', ''), $this->out);
-
-        if (empty($this->isAjax)) {
-            $this->out = $this->out['carts'][$this->cartId];
-        }
     }
 
     /**
      * @return array
      */
-    protected function getDocs()
+    protected function _getDocs()
     {
         $this->docs = [];
         if (!empty($this->session['items'])) {
@@ -527,20 +556,23 @@ class Cart extends ShkF
     }
 
     /**
-     * @param array $data
      * @return string
      */
-    protected function renderTemplates($data = [])
+    protected function renderTemplates()
     {
+        $data = $this->out['cart'];
+        $data['cart.id'] = $this->cartId;
+        $data['cart.wrap'] = '';
         if (!empty($this->count)) {
-            if (!empty($data['items'])) {
-                foreach ($data['items'] as $k => $v) {
-                    $data['cart']['cart.wrap'] .= $this->parseTpl($this->DL_config[$this->cartId]['tpl'], $v);
-                }
+//            $items = empty($this->out['carts'][$this->cartId]['items']) ? $this->out['items'] : array_merge_recursive($this->out['carts'][$this->cartId]['items'],
+//                $this->out);
+            $items = $this->out['carts'][$this->cartId]['items'];
+            foreach ($items as $k => $v) {
+                $data['cart.wrap'] .= $this->parseTpl($this->DL_config[$this->cartId]['tpl'], $v);
             }
-            $data = $this->parseTpl($this->DL_config[$this->cartId]['ownerTPL'], $data['cart']);
+            $data = $this->parseTpl($this->DL_config[$this->cartId]['ownerTPL'], $data);
         } else {
-            $data = $this->parseTpl($this->DL_config[$this->cartId]['noneTPL'], $data['cart']);
+            $data = $this->parseTpl($this->DL_config[$this->cartId]['noneTPL'], $data);
         }
         $data = $this->modx->cleanUpMODXTags($data);
         $data = str_ireplace('sanitized_by_modx<s cript', '<script', $data);
@@ -553,7 +585,7 @@ class Cart extends ShkF
      */
     public function toHtml()
     {
-        return $this->renderTemplates($this->out);
+        return $this->renderTemplates();
     }
 
 }
