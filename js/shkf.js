@@ -282,24 +282,26 @@ var shkf = (function(options) {
                       for (k in items) {
                         if (items.hasOwnProperty(k)) {
                           params = items[k][_this.prefix + '.params'];
-                          for (var p in params) {
-                            if (params.hasOwnProperty(p)) {
-                              param = [];
-                              for (var pp in params[p]) {
-                                if (params[p].hasOwnProperty(pp)) {
-                                  param.push(params[p][pp]['value']);
+                          if (typeof params === 'object') {
+                            for (var p in params) {
+                              if (params.hasOwnProperty(p)) {
+                                param = [];
+                                for (var pp in params[p]) {
+                                  if (params[p].hasOwnProperty(pp)) {
+                                    param.push(params[p][pp]['value']);
+                                  }
                                 }
+                                params[p] = _this.tpl(_this.carts[cartId]['tplParam'], {
+                                  param: param.join('||')
+                                });
                               }
-                              params[p] = _this.tpl(_this.carts[cartId]['tplParam'], {
-                                param: param.join('||')
-                              });
                             }
+                            items[k][_this.prefix + '.params'] = _this.tpl(_this.carts[cartId]['tplParams'], {
+                              params: Object.keys(params).map(function(e) {
+                                return params[e];
+                              }).join('')
+                            });
                           }
-                          items[k][_this.prefix + '.params'] = _this.tpl(_this.carts[cartId]['tplParams'], {
-                            params: Object.keys(params).map(function(e) {
-                              return params[e];
-                            }).join('')
-                          });
                           cart['cart']['cart.wrap'] += _this.tpl(_this.carts[cartId]['tpl'], items[k]);
                         }
                       }

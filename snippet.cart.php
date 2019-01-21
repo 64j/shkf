@@ -50,6 +50,6 @@ if (empty($params['async'])) {
     return $shkf->run()
         ->toHtml();
 } else {
-    $tpl = empty($shkf->count) ? $params['noneTPL'] : $params['ownerTPL'];
+    $tpl = empty($shkf->getSession('items')) ? $params['noneTPL'] : $params['ownerTPL'];
     return $modx->parseText($modx->getTpl($tpl), ['cart.id' => $params['id']]);
 }
