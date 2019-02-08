@@ -59,7 +59,8 @@ abstract class ShkF
             'price_thousands_sep' => '&nbsp;',
             'price_decimals' => 0,
             'prepareTpl' => '',
-            'prepareWrap' => ''
+            'prepareWrap' => '',
+            'checkParams' => 'true'
         ]);
 
         $this->getSession();

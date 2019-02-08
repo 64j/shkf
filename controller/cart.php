@@ -141,7 +141,8 @@ class Cart extends ShkF
             'noneTPL' => '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>',
             'tpl' => '@CODE:<a href="[+url+]">[+pagetitle+]</a>',
             'tplParams' => '@CODE:<div>[+params+]</div>',
-            'tplParam' => '@CODE:[+param+]<br>',
+            'tplParam' => '@CODE:[+name+]:[+values+]<br>',
+            'paramSeparator' => ', ',
         ];
 
         if (!empty($this->params['carts'])) {
@@ -220,8 +221,15 @@ class Cart extends ShkF
         $params = [];
         if (!empty($this->request) && isset($this->request['params'])) {
             foreach ($this->request['params'] as $name => $values) {
-                if (!empty($values)) {
-                    $params[$name] = [];
+                if ($this->config['checkParams'] == 'true') {
+                    list($name, $caption) = $this->checkParam($key, $name);
+                } else {
+                    list($name, $caption) = explode(':', $name, 2);
+                }
+                if (!empty($values) && $name) {
+                    $params[$name] = [
+                        'caption' => $caption
+                    ];
                     if (\is_array($values)) {
                         foreach ($values as $k => $v) {
                             $params[$name][] = $this->setItemParam($v);
@@ -262,6 +270,31 @@ class Cart extends ShkF
         }
 
         return $param;
+    }
+
+    /**
+     * @param $key
+     * @param $name
+     * @return string | int
+     */
+    protected function checkParam($key, $name)
+    {
+        $out = [];
+        $key = explode('#', $key)[0];
+        $name = explode(':', $name, 2)[0];
+        $sql = $this->modx->db->query('
+        SELECT tv.name, tv.caption
+        FROM ' . $this->modx->getFullTableName('site_tmplvars') . ' AS tv
+        LEFT JOIN ' . $this->modx->getFullTableName('site_tmplvar_templates') . ' AS tvt ON tvt.tmplvarid=tv.id 
+            AND (SELECT template FROM ' . $this->modx->getFullTableName('site_content') . ' WHERE id=' . $this->modx->db->escape($key) . ')
+        WHERE tv.name="' . $this->modx->db->escape($name) . '"
+        ');
+
+        if ($this->modx->db->getRecordCount($sql)) {
+            $out = array_values($this->modx->db->getRow($sql));
+        }
+
+        return $out;
     }
 
     /**
@@ -495,15 +528,23 @@ class Cart extends ShkF
         $_params = [];
         $_params['params'] = '';
         foreach ($params as $name => $values) {
-            $out[$key . '.' . $name] = '';
-            $param = '';
+            $caption = $values['caption'];
+            $out[$key . '.' . $name] = [];
+            $out[$key . '.' . $name . '.name'] = $name;
+            $out[$key . '.' . $name . '.caption'] = $caption;
+            $param = [];
+            unset($values['caption']);
+
             foreach ($values as $k => $v) {
-                $out[$key . '.' . $name] .= '||' . $v['value'];
-                $param .= '||' . $v['value'];
+                $out[$key . '.' . $name][] = $v['value'];
+                $param[] = $v['value'];
             }
-            $out[$key . '.' . $name] = ltrim($out[$key . '.' . $name], '||');
+
+            $out[$key . '.' . $name] = implode('||', $out[$key . '.' . $name]);
             $_params['params'] .= $this->parseTpl($this->DL_config[$this->cartId]['tplParam'], [
-                'param' => ltrim($param, '||')
+                'name' => $name,
+                'caption' => $caption,
+                'values' => implode($this->DL_config[$this->cartId]['paramSeparator'], $param)
             ]);
         }
         $out[$key] = !empty($_params['params']) ? $this->parseTpl($this->DL_config[$this->cartId]['tplParams'],
@@ -525,6 +566,7 @@ class Cart extends ShkF
     {
         $price = $this->docs[$id][$tvPrice];
         foreach ($this->session['params'][$key] as $name => $values) {
+            unset($values['caption']);
             if (!empty($values)) {
                 foreach ($values as $k => $v) {
                     if (!empty($v['price'])) {

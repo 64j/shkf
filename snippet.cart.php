@@ -18,7 +18,8 @@ $params['dataType'] = !empty($params['dataType']) ? $params['dataType'] : 'html'
 $params['ownerTPL'] = !empty($params['ownerTPL']) ? $params['ownerTPL'] : '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>';
 $params['noneTPL'] = !empty($params['noneTPL']) ? $params['noneTPL'] : $params['ownerTPL'];
 $params['tplParams'] = !empty($params['tplParams']) ? $params['tplParams'] : '@CODE:<div>[+params+]</div>';
-$params['tplParam'] = !empty($params['tplParam']) ? $params['tplParam'] : '@CODE:[+param+]<br>';
+$params['tplParam'] = !empty($params['tplParam']) ? $params['tplParam'] : '@CODE:[+name+]:[+values+]<br>';
+$params['paramSeparator'] = !empty($params['paramSeparator']) ? $params['paramSeparator'] : ', ';
 
 $modx->jscripts[$params['prefix'] . '_jscripts'] = '
 <script src="assets/modules/shkf/js/shkf.js?v=128"></script>
