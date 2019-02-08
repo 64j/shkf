@@ -133,6 +133,7 @@ var shkf = (function(options) {
           } else {
             el.innerHTML = shkf.setCount(el.innerHTML, step, shkf.action !== 'count');
           }
+          shkf.actions.trigger('change', el).focus();
         }
         if (shkf.getParentElement('key')) {
           shkf.process();
@@ -149,6 +150,19 @@ var shkf = (function(options) {
       if (shkf.call('empty.before')) {
         shkf.process();
       }
+    },
+    trigger: function(event, el) {
+      if (!event) {
+        return;
+      }
+      if (typeof Event === 'function') {
+        event = new Event(event);
+      } else {
+        event = document.createEvent('Event');
+        event.initEvent(event, true, true);
+      }
+      el.dispatchEvent(event);
+      return el;
     }
   };
 
