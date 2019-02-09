@@ -22,7 +22,7 @@ $params['tplParam'] = !empty($params['tplParam']) ? $params['tplParam'] : '@CODE
 $params['paramSeparator'] = !empty($params['paramSeparator']) ? $params['paramSeparator'] : ', ';
 
 $modx->jscripts[$params['prefix'] . '_jscripts'] = '
-<script src="assets/modules/shkf/js/shkf.js?v=128"></script>
+<script src="assets/modules/shkf/js/shkf.js"></script>
 <script>var shkf = new shkf({prefix: \'' . $params['prefix'] . '\'});</script>';
 
 $config = json_decode($modx->snippetCache['shkfCartProps'], true);
