@@ -133,10 +133,11 @@ var shkf = (function(options) {
           } else {
             el.innerHTML = shkf.setCount(el.innerHTML, step, shkf.action !== 'count');
           }
-          shkf.actions.trigger('change', el).focus();
         }
         if (shkf.getParentElement('key')) {
           shkf.process();
+        } else {
+          shkf.actions.trigger('change', el).focus();
         }
       }
     },
@@ -152,7 +153,7 @@ var shkf = (function(options) {
       }
     },
     trigger: function(event, el) {
-      if (!event) {
+      if (!event || !el) {
         return;
       }
       if (typeof Event === 'function') {
