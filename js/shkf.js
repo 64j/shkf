@@ -137,7 +137,7 @@ var shkf = (function(options) {
         if (shkf.getParentElement('key')) {
           shkf.process();
         } else {
-          shkf.actions.trigger('change', el).focus();
+          shkf.trigger('change', el).focus();
         }
       }
     },
@@ -151,20 +151,21 @@ var shkf = (function(options) {
       if (shkf.call('empty.before')) {
         shkf.process();
       }
-    },
-    trigger: function(event, el) {
-      if (!event || !el) {
-        return;
-      }
-      if (typeof Event === 'function') {
-        event = new Event(event);
-      } else {
-        event = document.createEvent('Event');
-        event.initEvent(event, true, true);
-      }
-      el.dispatchEvent(event);
-      return el;
     }
+  };
+
+  __.prototype.trigger = function(event, el) {
+    if (!event || !el) {
+      return;
+    }
+    if (typeof Event === 'function') {
+      event = new Event(event);
+    } else {
+      event = document.createEvent('Event');
+      event.initEvent(event, true, true);
+    }
+    el.dispatchEvent(event);
+    return el;
   };
 
   __.prototype.setCount = function(count, step, math) {
