@@ -90,11 +90,35 @@ class Cart extends ShkF
     }
 
     /**
-     * @return mixed
+     * @return array
      */
     public function getItems()
     {
+        return $this->getSession('items', []);
+    }
+
+    /**
+     * @return array
+     */
+    public function getFullItems()
+    {
         return empty($this->out['items']) ? [] : $this->out['items'];
+    }
+
+    /**
+     * @return int
+     */
+    public function getCount()
+    {
+        return count($this->getItems());
+    }
+
+    /**
+     * @return int
+     */
+    public function getCountItems()
+    {
+        return array_sum($this->getItems());
     }
 
     /**
