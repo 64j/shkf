@@ -40,7 +40,7 @@ var shkf = (function(options) {
     document.addEventListener('click', function(e) {
       shkf.event = e;
       shkf.target = shkf.event.target;
-      if (shkf.target.tagName === 'INPUT') {
+      if (shkf.target.tagName === 'INPUT' || shkf.target.tagName === 'SELECT') {
         return;
       }
       var pf = 'data-' + shkf.prefix + '-', s = shkf.searchAttribute(shkf.target.attributes, pf);
@@ -56,7 +56,7 @@ var shkf = (function(options) {
     document.addEventListener('change', function(e) {
       shkf.event = e;
       shkf.target = shkf.event.target;
-      if (shkf.target.tagName !== 'INPUT') {
+      if (!(shkf.target.tagName === 'INPUT' || shkf.target.tagName === 'SELECT')) {
         return;
       }
       var pf = 'data-' + shkf.prefix + '-', s = shkf.searchAttribute(shkf.target.attributes, pf);
@@ -252,100 +252,101 @@ var shkf = (function(options) {
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4) {
+      if (xhr.readyState === 4 && xhr.status === 200) {
         var response = JSON.parse(xhr.response), cartId, cart, items, params, param, tpl, k;
-        if (xhr.status === 200 && response) {
-          if (typeof response['carts'] !== 'undefined') {
-            for (cartId in response['carts']) {
-              if (response['carts'].hasOwnProperty(cartId)) {
-                var cartElement = document.getElementById(cartId);
-                if (!cartElement) {
-                  continue;
-                }
-                cart = response['carts'][cartId];
-                cart['cart'] = response['cart'];
-                cart['cart']['cart.id'] = cartId;
-                cart['cart']['cart.wrap'] = '';
+        if (typeof response['carts'] !== 'undefined') {
+          for (cartId in response['carts']) {
+            if (response['carts'].hasOwnProperty(cartId)) {
+              var cartElement = document.getElementById(cartId);
+              if (!cartElement) {
+                continue;
+              }
+              cart = response['carts'][cartId];
+              cart['cart'] = response['cart'];
+              cart['cart']['cart.id'] = cartId;
+              cart['cart']['cart.wrap'] = '';
 
-                if (typeof cart['html'] !== 'undefined') {
-                  cartElement.outerHTML = cart['html'];
-                  var s = [], _s = '', b, c = /<script[^>]*>([\s\S]*?)<\/script>/gi;
-                  while ((b = c.exec(cart['html']))) {
-                    s.push(b[1]);
+              if (typeof cart['html'] !== 'undefined') {
+                cartElement.outerHTML = cart['html'];
+                var s = [], _s = '', b, c = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+                while ((b = c.exec(cart['html']))) {
+                  s.push(b[1]);
+                }
+                _s = s.join('\n');
+                if (_s) {
+                  /** @namespace window.execScript */
+                  (window.execScript) ? window.execScript(_s) : window.setTimeout(_s, 0);
+                }
+              } else {
+                if (response['cart']['cart.count']) {
+                  items = response['items'];
+                  if (!cart['items']) {
+                    cart['items'] = {};
                   }
-                  _s = s.join('\n');
-                  if (_s) {
-                    /** @namespace window.execScript */
-                    (window.execScript) ? window.execScript(_s) : window.setTimeout(_s, 0);
-                  }
-                } else {
-                  if (response['cart']['cart.count']) {
-                    items = response['items'];
-                    if (!cart['items']) {
-                      cart['items'] = {};
-                    }
-                    for (k in cart['items']) {
-                      if (cart['items'].hasOwnProperty(k)) {
-                        for (var kk in cart['items'][k]) {
-                          if (cart['items'][k].hasOwnProperty(kk)) {
-                            items[k][kk] = cart['items'][k][kk];
-                          }
+                  for (k in cart['items']) {
+                    if (cart['items'].hasOwnProperty(k)) {
+                      for (var kk in cart['items'][k]) {
+                        if (cart['items'][k].hasOwnProperty(kk)) {
+                          items[k][kk] = cart['items'][k][kk];
                         }
                       }
                     }
-                    delete cart['items'];
-                    if (typeof _this.carts[cartId]['tpl'] !== 'undefined') {
-                      for (k in items) {
-                        if (items.hasOwnProperty(k)) {
-                          params = items[k][_this.prefix + '.params'];
-                          if (typeof params === 'object') {
-                            for (var p in params) {
-                              if (params.hasOwnProperty(p)) {
-                                param = [];
-                                for (var pp in params[p]) {
-                                  if (params[p].hasOwnProperty(pp)) {
-                                    param.push(params[p][pp]['value']);
-                                  }
+                  }
+                  delete cart['items'];
+                  if (typeof _this.carts[cartId]['tpl'] !== 'undefined') {
+                    for (k in items) {
+                      if (items.hasOwnProperty(k)) {
+                        params = items[k][_this.prefix + '.params'];
+                        if (typeof params === 'object') {
+                          for (var p in params) {
+                            if (params.hasOwnProperty(p)) {
+                              param = [];
+                              for (var pp in params[p]) {
+                                if (params[p].hasOwnProperty(pp)) {
+                                  param.push(params[p][pp]['value']);
                                 }
-                                params[p] = _this.tpl(_this.carts[cartId]['tplParam'], {
-                                  param: param.join('||')
-                                });
                               }
+                              params[p] = _this.tpl(_this.carts[cartId]['tplParam'], {
+                                param: param.join('||')
+                              });
                             }
-                            items[k][_this.prefix + '.params'] = _this.tpl(_this.carts[cartId]['tplParams'], {
-                              params: Object.keys(params).map(function(e) {
-                                return params[e];
-                              }).join('')
-                            });
                           }
-                          cart['cart']['cart.wrap'] += _this.tpl(_this.carts[cartId]['tpl'], items[k]);
+                          items[k][_this.prefix + '.params'] = _this.tpl(_this.carts[cartId]['tplParams'], {
+                            params: Object.keys(params).map(function(e) {
+                              return params[e];
+                            }).join('')
+                          });
                         }
+                        cart['cart']['cart.wrap'] += _this.tpl(_this.carts[cartId]['tpl'], items[k]);
                       }
                     }
-                    tpl = _this.carts[cartId]['ownerTPL'];
-                  } else {
-                    tpl = _this.carts[cartId]['noneTPL'];
                   }
-                  tpl = _this.tpl(tpl, cart['cart'], true);
-                  if (typeof tpl === 'object') {
-                    cartElement.parentElement.replaceChild(tpl, cartElement);
-                  } else {
-                    for (k in cart['cart']) {
-                      if (cart['cart'].hasOwnProperty(k)) {
-                        var alias = _this.prefix + '-' + cartId + '-' + k.replace(/\./g, '-'), el = cartElement.querySelector('.' + alias);
-                        if (el) {
-                          el.innerHTML = cart['cart'][k];
-                        }
-                        el = cartElement.parentElement.querySelector('[data-' + alias + ']');
-                        if (el) {
-                          el.setAttribute('data-' + alias, cart['cart'][k]);
-                        }
+                  tpl = _this.carts[cartId]['ownerTPL'];
+                } else {
+                  tpl = _this.carts[cartId]['noneTPL'];
+                }
+                tpl = _this.tpl(tpl, cart['cart'], true);
+                if (typeof tpl === 'object') {
+                  cartElement.parentElement.replaceChild(tpl, cartElement);
+                } else {
+                  for (k in cart['cart']) {
+                    if (cart['cart'].hasOwnProperty(k)) {
+                      var alias = _this.prefix + '-' + cartId + '-' + k.replace(/\./g, '-'), el = cartElement.querySelector('.' + alias);
+                      if (el) {
+                        el.innerHTML = cart['cart'][k];
+                      }
+                      el = cartElement.parentElement.querySelector('[data-' + alias + ']');
+                      if (el) {
+                        el.setAttribute('data-' + alias, cart['cart'][k]);
                       }
                     }
                   }
                 }
               }
             }
+          }
+          if (typeof shkf.ajaxOrder !== 'undefined' && ~['plus', 'minus', 'del'].indexOf(shkf.action)) {
+            shkf.ajaxOrder(true);
           }
         }
 

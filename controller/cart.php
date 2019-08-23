@@ -450,7 +450,11 @@ class Cart extends ShkF
                     $this->out['carts'][$cartId]['items'][$k] = array_diff_key($item, $this->out['items'][$k]);
                 }
 
-                $this->sumTotal = $this->sum;
+                if (empty($this->session['sum_added'])) {
+                    $this->session['sum_added'] = 0;
+                }
+
+                $this->sumTotal = $this->session['sum_added'] + $this->sum;
 
                 $this->out['cart'] = [
                     'cart.id' => $cartId,

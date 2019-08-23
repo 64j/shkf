@@ -81,7 +81,9 @@ abstract class ShkF
                         $this->request[$k] = $this->modx->removeSanitizeSeed($v);
                     }
                 } else {
-                    $this->params[$k] = $this->modx->removeSanitizeSeed($v);
+                    if (is_string($v)) {
+                        $this->params[$k] = $this->modx->removeSanitizeSeed($v);
+                    }
                 }
             }
         }
@@ -124,7 +126,7 @@ abstract class ShkF
      * @param string $thousands_sep
      * @return int|string
      */
-    protected function number_format($number, $decimals = 0, $thousands_sep = '')
+    public function number_format($number, $decimals = 0, $thousands_sep = '')
     {
         $number = str_replace(',', '.', $number);
         $number = !empty($number) ? number_format($number, $decimals, '.', $thousands_sep) : 0;
@@ -137,10 +139,11 @@ abstract class ShkF
      * @param int $decimals
      * @return float
      */
-    protected function float($number, $decimals = 0)
+    public function float($number, $decimals = 0)
     {
         $number = str_replace(',', '.', $number);
         $number = preg_replace('/[^.0-9]/', '', $number);
+
         return floatval($number);
     }
 
@@ -272,6 +275,16 @@ abstract class ShkF
         }
 
         return $out;
+    }
+
+    /**
+     * @param $key
+     * @param string $value
+     * @return string
+     */
+    public function setSession($key, $value = '')
+    {
+        return $this->session[$key] = $value;
     }
 
     /**
