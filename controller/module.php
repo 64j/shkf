@@ -57,17 +57,24 @@ class Module
      */
     public function install()
     {
+        $prefix = $this->evo->getConfig('prefix');
+        if (!empty($this->evo->getConfig('table_prefix'))) {
+            $prefix = $this->evo->getConfig('table_prefix');
+        }
+
+        $table_charset = 'DEFAULT CHARSET=' . $this->evo->db->config['charset'];
+
         $sql = [];
 
-        $sql[] = 'CREATE TABLE IF NOT EXISTS ' . $this->evo->db->config['table_prefix'] . 'shkf_config 
+        $sql[] = 'CREATE TABLE IF NOT EXISTS ' . $prefix . 'shkf_config 
         (
         `id` INT(11) NOT NULL AUTO_INCREMENT,
         `setting` varchar(255),
         `value` text,
         PRIMARY KEY (`id`)
-        );';
+        ) ENGINE=MyISAM ' . $table_charset . ';';
 
-        $sql[] = 'CREATE TABLE IF NOT EXISTS ' . $this->evo->db->config['table_prefix'] . 'shkf_orders 
+        $sql[] = 'CREATE TABLE IF NOT EXISTS ' . $prefix . 'shkf_orders 
         (
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `hash` text,
@@ -82,9 +89,9 @@ class Module
         `customer` text,
         `note` text,
         PRIMARY KEY (`id`)
-        );';
+        ) ENGINE=MyISAM ' . $table_charset . ';';
 
-        $sql[] = 'CREATE TABLE IF NOT EXISTS ' . $this->evo->db->config['table_prefix'] . 'shkf_delivery 
+        $sql[] = 'CREATE TABLE IF NOT EXISTS ' . $prefix . 'shkf_delivery 
         (
         `id` INT(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(255),
@@ -92,16 +99,16 @@ class Module
         `price` int(11),
         `rank` int(11),
         PRIMARY KEY (`id`)
-        );';
+        ) ENGINE=MyISAM ' . $table_charset . ';';
 
-        $sql[] = 'CREATE TABLE IF NOT EXISTS ' . $this->evo->db->config['table_prefix'] . 'shkf_payment 
+        $sql[] = 'CREATE TABLE IF NOT EXISTS ' . $prefix . 'shkf_payment 
         (
         `id` INT(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(255),
         `title` text,
         `rank` int(11),
         PRIMARY KEY (`id`)
-        );';
+        ) ENGINE=MyISAM ' . $table_charset . ';';
 
         $sql[] = 'INSERT INTO ' . $this->evo->getFullTableName('shkf_config') . ' VALUES (NULL, "version", "' . $this->version . '");';
         $sql[] = 'INSERT INTO ' . $this->evo->getFullTableName('shkf_config') . ' VALUES (NULL, "orders_tpl", "@FILE:orders.tpl");';
