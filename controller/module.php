@@ -97,6 +97,7 @@ class Module
         `name` varchar(255),
         `title` text,
         `price` int(11),
+        `disabled` int(1) DEFAULT 0,
         `rank` int(11),
         PRIMARY KEY (`id`)
         ) ENGINE=MyISAM ' . $table_charset . ';';
@@ -106,6 +107,7 @@ class Module
         `id` INT(11) NOT NULL AUTO_INCREMENT,
         `name` varchar(255),
         `title` text,
+        `disabled` int(1) DEFAULT 0,
         `rank` int(11),
         PRIMARY KEY (`id`)
         ) ENGINE=MyISAM ' . $table_charset . ';';

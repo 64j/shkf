@@ -42,6 +42,9 @@ class Order extends Form
         $deliveryValue = $this->getField($deliveryField);
 
         foreach ($deliveryData as $k => $v) {
+            if (!empty($v['disabled'])) {
+                continue;
+            }
             $deliveryList .= $this->parseChunk($this->getCFGDef('shkfDeliveryTpl', '@CODE:[+id+]:[+value+]'), array_merge($v, [
                 'id' => $k,
                 'selected' => $deliveryValue == $k ? ' selected' : '',
@@ -72,6 +75,9 @@ class Order extends Form
         $paymentValue = $this->getField($paymentField);
 
         foreach ($paymentData as $k => $v) {
+            if (!empty($v['disabled'])) {
+                continue;
+            }
             $paymentList .= $this->parseChunk($this->getCFGDef('shkfPaymentTpl', '@CODE:[+id+]:[+value+]'), array_merge($v, [
                 'id' => $k,
                 'selected' => $paymentValue == $k ? ' selected' : '',
