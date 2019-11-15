@@ -15,8 +15,11 @@ class Order extends Form
 
     public function __construct(\DocumentParser $modx, array $cfg = array())
     {
-        parent::__construct($modx, $cfg);
         $this->cart = Cart::getInstance();
+        if (isset($_REQUEST[$this->cart->getConfig('prefix') . '-action']) && $_REQUEST[$this->cart->getConfig('prefix') . '-action'] == 'recount') {
+            $cfg['disableSubmit'] = 1;
+        }
+        parent::__construct($modx, $cfg);
     }
 
     public function render()
@@ -28,12 +31,6 @@ class Order extends Form
         $this->modx->jscripts['shkfOrder_jscripts'] = '
         <script>shkf.orderFormId = \'' . $this->getCFGDef('formid', '') . '\';</script>
         <script src="assets/modules/shkf/js/shkf.order.js"></script>';
-
-        if (isset($_REQUEST[$this->cart->getConfig('prefix') . '-action']) && $_REQUEST[$this->cart->getConfig('prefix') . '-action'] == 'recount') {
-            $this->config->setConfig([
-                'disableSubmit' => 1
-            ]);
-        }
 
         // Доставка
         $deliveryList = '';
