@@ -16,9 +16,7 @@ class Order extends Form
     public function __construct(\DocumentParser $modx, array $cfg = array())
     {
         $this->cart = Cart::getInstance();
-        if (isset($_REQUEST[$this->cart->getConfig('prefix') . '-action']) && $_REQUEST[$this->cart->getConfig('prefix') . '-action'] == 'recount') {
-            $cfg['disableSubmit'] = 1;
-        }
+
         parent::__construct($modx, $cfg);
     }
 
@@ -30,7 +28,11 @@ class Order extends Form
 
         $this->modx->jscripts['shkfOrder_jscripts'] = '
         <script>shkf.orderFormId = \'' . $this->getCFGDef('formid', '') . '\';</script>
-        <script src="assets/modules/shkf/js/shkf.order.js"></script>';
+        <script src="assets/modules/shkf/js/shkf.order.js?v=1"></script>';
+
+        if (isset($_REQUEST[$this->cart->getConfig('prefix') . '-action']) && $_REQUEST[$this->cart->getConfig('prefix') . '-action'] == 'recount') {
+            $this->config->setConfig(array('disableSubmit' => 1));
+        }
 
         // Доставка
         $deliveryList = '';
@@ -39,9 +41,6 @@ class Order extends Form
         $deliveryValue = $this->getField($deliveryField);
 
         foreach ($deliveryData as $k => $v) {
-            if (!empty($v['disabled'])) {
-                continue;
-            }
             $deliveryList .= $this->parseChunk($this->getCFGDef('shkfDeliveryTpl', '@CODE:[+id+]:[+value+]'), array_merge($v, [
                 'id' => $k,
                 'selected' => $deliveryValue == $k ? ' selected' : '',
@@ -72,9 +71,6 @@ class Order extends Form
         $paymentValue = $this->getField($paymentField);
 
         foreach ($paymentData as $k => $v) {
-            if (!empty($v['disabled'])) {
-                continue;
-            }
             $paymentList .= $this->parseChunk($this->getCFGDef('shkfPaymentTpl', '@CODE:[+id+]:[+value+]'), array_merge($v, [
                 'id' => $k,
                 'selected' => $paymentValue == $k ? ' selected' : '',
@@ -137,6 +133,10 @@ class Order extends Form
                     }
                 }
             }
+        }
+
+        if ($this->isSubmitted() && ($this->checkSubmitLimit() || $this->getCFGDef('disableSubmit'))) {
+            return $this->renderForm();
         }
 
         return parent::render();
