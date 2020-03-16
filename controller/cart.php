@@ -160,7 +160,7 @@ class Cart extends ShkF
             'urlScheme' => '',
             'prepare' => '',
             'tvList' => '',
-            'selectFields' => 'c.id, c.parent, c.pagetitle, c.longtitle, c.alias, c.isfolder, c.introtext, c.template',
+            'selectFields' => 'c.id, c.parent, c.pagetitle, c.longtitle, c.alias, c.isfolder, c.introtext, c.template, c.type, c.menutitle',
             'ownerTPL' => '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>',
             'noneTPL' => '@CODE:<div id="[+cart.id+]">[+cart.count+]</div>',
             'tpl' => '@CODE:<a href="[+url+]">[+pagetitle+]</a>',
